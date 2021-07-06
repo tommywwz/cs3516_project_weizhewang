@@ -8,7 +8,7 @@
 #include <arpa/inet.h>
 
 #define PORT 8888
-#define TABLE_SIZE 100 // size of hash table
+#define TABLE_SIZE 1 // size of hash table
 
 typedef struct Entry_ht {
     char* user;
@@ -21,6 +21,7 @@ typedef struct {
 
 unsigned int hash_user (const char* user);
 int ht_add(hashtab* ht, const char* user);
+void ht_print(hashtab* ht);
 void ht_rm(hashtab* ht, const char* user);
 entry_ht* ht_inst(const char* user);
 hashtab* ht_create ();
@@ -80,20 +81,48 @@ int main() {
             //check username entering
             char collision[64];
             char username[1024];
-            bzero(username, sizeof(username));
-            recv(newSocket, username, 1024,0);
-            // check if the username is exist
-            collision[0] = ht_add(ptr_usertable, username);
-            // if so inform the client and check new user name
-            while (collision[0]) {
-                send(newSocket, collision, strlen(collision), 0);
+
+            // bzero(username, sizeof(username));
+            // recv(newSocket, username, 1024,0);
+            // // check if the username is exist
+            // collision[0] = ht_add(ptr_usertable, username);
+            // printf("[DEBUG] return of collision: %d\n", collision[0]);
+            // // if so inform the client and check new user name
+            // while (collision[0]) {
+            //     send(newSocket, collision, strlen(collision), 0);
+            //     bzero(username, sizeof(username));
+            //     recv(newSocket, collision, sizeof(collision), 0);
+                
+            //     recv(newSocket, username, 1024,0);
+            //     collision[0] = ht_add(ptr_usertable, username);
+            // }
+
+            while(1) {
                 bzero(username, sizeof(username));
-                recv(newSocket, username, 1024,0);
+                bzero(collision, sizeof(collision));
+                recv(newSocket, username, 1024,0); //a
+                send(newSocket, username, strlen(username), 0); //a
+
+                // check if the username is exist  
+                printf("[DEBUG] new socket = %d\n", newSocket);              
+                recv(newSocket, collision, sizeof(collision), 0);
+                printf("[DEBUG] recv of collision: %d\n", collision[0]);
                 collision[0] = ht_add(ptr_usertable, username);
+                printf("[DEBUG] return of collision: %d\n", collision[0]);
+                send(newSocket, collision, strlen(collision), 0);
+                printf("[DEBUG] send of collision: %d\n", collision[0]);
+                
+                // if so inform the client and check new user name
+                if (collision[0] == 1) {
+                    break;
+                }
             }
-            send(newSocket, collision, strlen(collision), 0);
+
             printf("username of port %d is %s\n", ntohs(newAddr.sin_port), username);
             send(newSocket, username, strlen(username), 0);
+            printf("\nCurrent users:\n");
+            ht_print(ptr_usertable);
+            printf("\n");
             //
 
             while (1) {
@@ -108,6 +137,7 @@ int main() {
                 } else {
                     printf("%s: %s\n", username, buffer);
                     send(newSocket, buffer, strlen(buffer), 0);
+                    ht_print(ptr_usertable);
                 }
             }
         }
@@ -149,21 +179,23 @@ entry_ht* ht_inst(const char* user) {
     return entry;
 }
 
-// insert user to hash table
+// insert user to hash table, return 1 indicate add successfully, return 2 indicate a duplication in name
 int ht_add(hashtab* ht, const char* user) {
     unsigned int slot = hash_user(user);
     // look up the slot in hashmap
     entry_ht* entry = ht->entries[slot];
+    printf("entries pointer before: %p\n", ht->entries[slot]);
     // if no entry in that slot, insert one
     if (entry == NULL) {
         ht->entries[slot] = ht_inst(user);
-        return 0;
+        printf("entries pointer after: %p\n", ht->entries[slot]);
+        return 1;
     }
     // when slot is occupied
     entry_ht* prev;
     while (entry != NULL) {
         if (strcmp(entry->user, user) == 0) {
-            return 1; // indicate the same username is exist
+            return 2; // indicate the same username is exist
         }
         // go the the next
         prev = entry;
@@ -171,7 +203,28 @@ int ht_add(hashtab* ht, const char* user) {
     }
     // while the entry is empty 
     entry = ht_inst(user);
-    return 0;
+    return 3;
+}
+
+void ht_print(hashtab* ht) {
+    printf("entries pointer: %p\n", ht->entries[0]);
+    unsigned int i;
+    for(i = 0; i < TABLE_SIZE; ++i) {
+        entry_ht* entry = ht->entries[i];
+        if (entry != NULL) {
+            for(;;) {
+                printf("%d: %s\n", i, entry->user);
+                if (entry->next == NULL) {
+                    break;
+                }
+
+                entry = entry->next;
+                //debug
+                printf("%d: %s\n", i, entry->user);
+            }
+            
+        }
+    }
 }
 
 // remove user from hash table

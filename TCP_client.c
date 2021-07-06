@@ -43,6 +43,7 @@ int main() {
     char collision[64];
     
     while (1) {
+        bzero(username, sizeof(username));
         printf("Your name please: ");
         if (fgets(username, MAX_INPUT_SIZE, stdin)) {
             if (strlen(username) < 5) {
@@ -53,13 +54,20 @@ int main() {
                 }
 
                 sscanf(username, "%s", username);
-                send(clientSocket, username, strlen(username), 0);
+                send(clientSocket, username, strlen(username), 0); 
+                recv(clientSocket, username, 1024,0); 
+
+                // check the username collision
+                send(clientSocket, collision, strlen(collision), 0);
+                printf("[DEBUG] send of collision: %d\n", collision[0]);
                 recv(clientSocket, collision, sizeof(collision), 0);
-                printf("%d\n", collision[0]);
-                if (collision[0]) {
+                printf("[DEBUG] collision recv: %d\n", collision[0]);                
+
+                if (collision[0] == 2) {
                     printf("This name is used\n");
-                    bzero(username, sizeof(username));
+                    bzero(collision, sizeof(collision));
                 } else {
+                    bzero(collision, sizeof(collision));
                     break;
                 }
             }
