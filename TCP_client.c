@@ -65,9 +65,9 @@ int main() {
 
                 if (collision[0] == 2) {
                     printf("This name is used\n");
-                    bzero(collision, sizeof(collision));
+                    //bzero(collision, sizeof(collision));
                 } else {
-                    bzero(collision, sizeof(collision));
+                    //bzero(collision, sizeof(collision));
                     break;
                 }
             }

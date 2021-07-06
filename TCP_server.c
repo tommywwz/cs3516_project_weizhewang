@@ -8,7 +8,9 @@
 #include <arpa/inet.h>
 
 #define PORT 8888
-#define TABLE_SIZE 1 // size of hash table
+#define TABLE_SIZE 10000 // size of hash table
+
+int test = 0;
 
 typedef struct Entry_ht {
     char* user;
@@ -25,7 +27,6 @@ void ht_print(hashtab* ht);
 void ht_rm(hashtab* ht, const char* user);
 entry_ht* ht_inst(const char* user);
 hashtab* ht_create ();
-
 
 
 int main() {
@@ -73,6 +74,10 @@ int main() {
         }
         printf("Connection accepted from addr:%s  port:%d\nwaiting for username.....\n", inet_ntoa(newAddr.sin_addr), ntohs(newAddr.sin_port));
 
+        ht_add(ptr_usertable, "Tommy");
+        ht_print(ptr_usertable);
+        ht_add(ptr_usertable, "Tom");
+        ht_print(ptr_usertable);
 
         //open a thread for new client
         if ((childpid = fork()) == 0) {
@@ -130,6 +135,13 @@ int main() {
                 bzero(buffer, sizeof(buffer));
                 recv(newSocket, buffer, 1024,0);
                 //printf("newSocket: %d\n", newSocket); //debug
+                if (strcmp(buffer, "add") == 0) {
+                    test ++;
+                    printf("adding done! test: %d\n", test);
+                }
+                if (strcmp(buffer, "show") == 0) {
+                    printf("test: %d\n", test);
+                }
                 if (strcmp(buffer, "&exit") == 0) {
                     ht_rm(ptr_usertable, username);
                     printf("%s disconnected from addr:%s  port:%d\n", username, inet_ntoa(newAddr.sin_addr), ntohs(newAddr.sin_port));
@@ -184,11 +196,11 @@ int ht_add(hashtab* ht, const char* user) {
     unsigned int slot = hash_user(user);
     // look up the slot in hashmap
     entry_ht* entry = ht->entries[slot];
-    printf("entries pointer before: %p\n", ht->entries[slot]);
+    printf("entries pointer before: %p\n", ht->entries[slot]); //DEBUG
     // if no entry in that slot, insert one
     if (entry == NULL) {
         ht->entries[slot] = ht_inst(user);
-        printf("entries pointer after: %p\n", ht->entries[slot]);
+        printf("entries pointer after: %p\n", ht->entries[slot]); // DEBUG
         return 1;
     }
     // when slot is occupied
@@ -203,11 +215,10 @@ int ht_add(hashtab* ht, const char* user) {
     }
     // while the entry is empty 
     entry = ht_inst(user);
-    return 3;
+    return 1;
 }
 
 void ht_print(hashtab* ht) {
-    printf("entries pointer: %p\n", ht->entries[0]);
     unsigned int i;
     for(i = 0; i < TABLE_SIZE; ++i) {
         entry_ht* entry = ht->entries[i];
