@@ -1,0 +1,11 @@
+You will need software like Vcxsvr to run the GUI if you are operating on WSL instead of native UNIX distribution.
+Then you need to run the command below in the WSL console and enable Vcxsvr to give WSL the permission to pull up the GUI:
+$ export DISPLAY=$(cat /etc/resolv.conf | grep nameserver | awk '{print $2}'):0
+
+To compile the GUI you will need the GTK3.0 package and run the command below (and I suggest you forget about it and just run the compiled app):
+$ make gui
+or
+$ gcc `pkg-config --cflags gtk+-3.0` -o hello gui.c `pkg-config --libs gtk+-3.0`
+
+To run the GUI you will simply just call by the app name:
+$ ./gui
