@@ -7,6 +7,7 @@
 #include <sys/types.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
+#include <signal.h>
 
 #define PORT 8888
 #define MAX_INPUT_SIZE 1024
@@ -17,14 +18,36 @@ int clientSocket = 0;
 char username[MAX_USERNAME_SIZE];
 int leave = 0;
 
+void exiting () {
+    send(clientSocket, "&exit", strlen("&exit"), 0);
+    close(clientSocket);
+    printf("\nDisconnected from server.\n");
+    leave = 1;
+}
+
+void  Ctrl_C_Handler(int sig)
+{
+    // char  c;
+    // signal(sig, SIG_IGN);
+    // printf("Do you really want to quit? [y/n] \n");
+    // c = getchar();
+    // if (c == 'y' || c == 'Y') {
+    //     exiting ();
+    // } else {
+    //     signal(SIGINT, Ctrl_C_Handler);
+    // }
+    exiting ();
+}
 
 void* client_recv_handler () {
-    
     char msg [MAX_INPUT_SIZE+MAX_USERNAME_SIZE+30];
     while(1) {
         bzero(msg, sizeof(msg));
         if(recv(clientSocket, msg, sizeof(msg), 0) < 0) {
             printf("Error in Connection [Fail to Recv]\n");
+        } else if (strlen(msg) == 0) {
+            printf("server is down!\n");
+            exiting ();
         } else {
             printf("%s\n", msg);
             printf("chat here:\n");
@@ -40,12 +63,10 @@ void* client_send_handler () {
         if (fgets(msg, MAX_INPUT_SIZE, stdin)) {
             if ((strlen(msg) > 0) && (msg[strlen (msg) - 1] == '\n')) {
                 msg[strlen (msg) - 1] = '\0';  // add null terminater at the end of input
-                send(clientSocket, msg, strlen(msg), 0);
                 if (strcmp(msg, "&exit") == 0) {
-                    close(clientSocket);
-                    printf("Disconnected from server.\n");
-                    leave = 1;
+                    exiting ();
                 }
+                send(clientSocket, msg, strlen(msg), 0);
             }
         }
     }
@@ -58,6 +79,8 @@ int main() {
     
     struct sockaddr_in serverAddr;
     char msg[MAX_INPUT_SIZE];
+
+    signal(SIGINT, Ctrl_C_Handler);
 
     clientSocket = socket(AF_INET, SOCK_STREAM, 0);
 
@@ -141,7 +164,7 @@ int main() {
 
     }
 
-    printf("bye\n");
+    printf("\nBye~\n");
 
 
     // while (1) {

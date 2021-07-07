@@ -132,7 +132,8 @@ void* newclient (void *arg) {
         send(newSocket, collision, sizeof(collision), 0);
         //printf("[DEBUG] send of collision: %d\n", collision[0]);
         
-        // if so inform the client and check new user name
+        
+        // when username is valid, break the loop
         if (collision[0] == 1) {
             break;
         }
@@ -172,7 +173,7 @@ void* newclient (void *arg) {
             printf("[DEBUG] exit entered\n");
             ht_rm(ptr_usertable, username);
             printf("\n--- %s disconnected from port:%d ---\n", username, client_port);
-            printf("rest of users:\n");
+            printf("\nrest of users:\n");
             sprintf(member_left, "\n---%s left chat room---\n", username);
             ht_send_all (ptr_usertable, member_left);
             ht_print(ptr_usertable);
