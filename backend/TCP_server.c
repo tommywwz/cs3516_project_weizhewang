@@ -173,7 +173,7 @@ void* newclient (void *arg) {
     send(newSocket, username, strlen(username), 0); // send back username to client
 
     // print all connected users on server end
-    printf("\nCurrent users:\n");
+    printf("\nConnected users:\n");
     ht_print(ptr_usertable);
     printf("\n");
     //
