@@ -12,15 +12,23 @@
 #define PORT 8888
 #define MAX_INPUT_SIZE 1024
 
-typedef struct PTH_Args
+typedef struct client_args
 {
     hashtab* ptr_ht;
     uint16_t port;
     int sockID;
-} arguments;
+} client_args;
+
+typedef struct server_args
+{
+    hashtab* ptr_ht;
+    int sockfd;    
+} server_args;
 
 void* newserver (void *arg) {
-    hashtab* ptr_usertable = arg;
+    server_args* args = arg;
+    hashtab* ptr_usertable = args->ptr_ht;
+    int sockfd = args->sockfd;
     char cmd[1024];
     while (1) {
         bzero(cmd, sizeof(cmd));
@@ -31,8 +39,8 @@ void* newserver (void *arg) {
             if (strcmp(cmd, "&users") == 0) {
                 printf("connected users:\n");
                 ht_print(ptr_usertable);
-            } else if (strcmp(cmd, "&quit") == 0) {
-                ///////////
+            } else if (strcmp(cmd, "&terminate") == 0) {
+                close(sockfd);
             } else if (strcmp(cmd, "&help") == 0) {
                 printf("&users: display all users\n");
             } else {
@@ -44,7 +52,7 @@ void* newserver (void *arg) {
 }
 
 void* newclient (void *arg) {
-    arguments* args = arg;
+    client_args* args = arg;
     int newSocket = args->sockID;
     uint16_t client_port = args->port;
     hashtab* ptr_usertable = args->ptr_ht;
@@ -119,6 +127,7 @@ int main() {
     int newSocket;
     
     hashtab* ptr_usertable = ht_create();
+    server_args ser_arg; // pointer for passing to server admin thread
 
 
     sockfd = socket(AF_INET, SOCK_STREAM, 0);
@@ -142,11 +151,13 @@ int main() {
 
     if(listen(sockfd, 10) == 0) {
         printf("Listening.....\n");
+        ser_arg.ptr_ht = ptr_usertable;
+        ser_arg.sockfd = sockfd;
+        pthread_create(&pthread_id, NULL, newserver, &ser_arg); //create server admin thread
     } else {
         printf("[-] Error in Listening\n");
     }
 
-    pthread_create(&pthread_id, NULL, newserver, ptr_usertable);
 
     while (1) {
         newSocket = accept(sockfd, (struct sockaddr*)&newAddr, &addrsize);
@@ -155,13 +166,13 @@ int main() {
         }
         printf("[+] Connection accepted from addr:%s  port:%d\nwaiting for username.....\n", inet_ntoa(newAddr.sin_addr), ntohs(newAddr.sin_port));
 
-        arguments args;
-        args.port = ntohs(newAddr.sin_port);
-        args.ptr_ht = ptr_usertable;
-        args.sockID = newSocket;
+        client_args client_args;
+        client_args.port = ntohs(newAddr.sin_port);
+        client_args.ptr_ht = ptr_usertable;
+        client_args.sockID = newSocket;
 
         //open a thread for new client
-        pthread_create(&pthread_id, NULL, newclient, &args);
+        pthread_create(&pthread_id, NULL, newclient, &client_args);
   
     }
 

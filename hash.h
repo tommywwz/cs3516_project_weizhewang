@@ -3,7 +3,7 @@
 #ifndef HASH_H
 #define HASH_H
 
-#define TABLE_SIZE 1 // size of hash table
+#define TABLE_SIZE 100 // size of hash table
 
 typedef struct Entry_ht {
     char* user;
