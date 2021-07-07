@@ -161,6 +161,8 @@ void* newclient (void *arg) {
         }
     }
 
+
+    // check if user is disconnected 
     if (strcmp(username, "&exit") == 0) {
         int* exit;
         printf("\n--- disconnected from port:%d ---\n", client_port);
@@ -168,11 +170,17 @@ void* newclient (void *arg) {
     }
 
     printf("\n--- username of port %d is %s ---\n", client_port, username);
-    send(newSocket, username, strlen(username), 0);
+    send(newSocket, username, strlen(username), 0); // send back username to client
+
+    // print all connected users on server end
     printf("\nCurrent users:\n");
     ht_print(ptr_usertable);
     printf("\n");
     //
+
+    bzero(buffer, sizeof(buffer)); // reset buffer
+    sprintf(buffer, "\n---%s entered chat---\n", username);
+    ht_send_all (ptr_usertable, buffer);
 
     while (1) {
         bzero(buffer, sizeof(buffer));
