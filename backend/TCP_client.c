@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <pthread.h>
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <netinet/in.h>
@@ -10,19 +11,59 @@
 #define PORT 8888
 #define MAX_INPUT_SIZE 1024
 
+// globals
+int clientSocket = 0;
+char username[MAX_INPUT_SIZE];
+int leave = 0;
+
+
+void* client_recv_handler () {
+    
+    char msg [MAX_INPUT_SIZE+32];
+    while(1) {
+        bzero(msg, sizeof(msg));
+        if(recv(clientSocket, msg, MAX_INPUT_SIZE, 0) < 0) {
+            printf("Error in Connection [Fail to Recv]\n");
+        } else {
+            printf("%s\n", msg);
+        }
+    }
+}
+
+void* client_send_handler () {
+
+    char msg [MAX_INPUT_SIZE];
+    while (1) {
+
+        if (fgets(msg, MAX_INPUT_SIZE, stdin)) {
+            if ((strlen(msg) > 0) && (msg[strlen (msg) - 1] == '\n')) {
+                msg[strlen (msg) - 1] = '\0';  // add null terminater at the end of input
+                send(clientSocket, msg, strlen(msg), 0);
+                if (strcmp(msg, "&exit") == 0) {
+                    close(clientSocket);
+                    printf("Disconnected from server.\n");
+                    leave = 1;
+                }
+            }
+        }
+    }
+}
+
+
+
+
 int main() {
-    int clientSocket;
+    
     struct sockaddr_in serverAddr;
     char msg[MAX_INPUT_SIZE];
-    char username[MAX_INPUT_SIZE];
 
     clientSocket = socket(AF_INET, SOCK_STREAM, 0);
 
     if(clientSocket < 0) {
-        printf("Error in connection.\n");
+        printf("[-] Error in connection.\n");
         exit(1);
     }
-    printf("Client Socket is created!\n");
+    printf("[+] Client Socket is created!\n");
 
     memset(&serverAddr, '\0', sizeof(serverAddr));
     serverAddr.sin_family = AF_INET;
@@ -32,11 +73,11 @@ int main() {
     int ret = connect(clientSocket, (struct sockaddr*)&serverAddr, sizeof(serverAddr));
 
     if (ret < 0) {
-        printf("Failed to Connect\n");
+        printf("[-] Failed to Connect\n");
         exit(1);
     }
 
-    printf("Connected to server\n");
+    printf("[+] Connected to server\n");
 
     // allow user to choose nickname at the begining
 
@@ -82,32 +123,50 @@ int main() {
     printf("\n///////////////\nGreeting %s\n///////////////\n\n", username);
 
 
-    while (1) {
-        printf("%s: ", username);
+    pthread_t send_thread, recv_thread;
+    if (pthread_create(&send_thread, NULL, (void *) client_send_handler, NULL) != 0){
+		printf("[-] ERROR: can't create send thread\n");
+        exit(1);
+	}
 
-        if (fgets(msg, MAX_INPUT_SIZE, stdin)) {
-            if ((strlen(msg) > 0) && (msg[strlen (msg) - 1] == '\n')) {
-                msg[strlen (msg) - 1] = '\0';  // add null terminater at the end of input
-                send(clientSocket, msg, strlen(msg), 0);
-                if (strcmp(msg, "&exit") == 0) {
-                    close(clientSocket);
-                    printf("Disconnected from server.\n");
-                    exit(1);
-                }
-            }
-            if (strlen(msg) > 0) {
-                if(recv(clientSocket, msg, MAX_INPUT_SIZE, 0) < 0) {
-                    printf("Error in Connection [Fail to Recv]\n");
-                } else {
-                    printf("Server: %s\n", msg);
-                    bzero(msg, sizeof(msg));
-                }
-            } else {
-                printf ("You have entered nothing!\n");
-            }
-        } 
+    if (pthread_create(&recv_thread, NULL, (void *) client_recv_handler, NULL) != 0){
+		printf("[-] ERROR: can't create recv thread\n");
+        exit(1);
+	}
+
+    while (!leave) {
 
     }
+
+    printf("bye\n");
+
+
+    // while (1) {
+    //     printf("%s: ", username);
+
+    //     if (fgets(msg, MAX_INPUT_SIZE, stdin)) {
+    //         if ((strlen(msg) > 0) && (msg[strlen (msg) - 1] == '\n')) {
+    //             msg[strlen (msg) - 1] = '\0';  // add null terminater at the end of input
+    //             send(clientSocket, msg, strlen(msg), 0);
+    //             if (strcmp(msg, "&exit") == 0) {
+    //                 close(clientSocket);
+    //                 printf("Disconnected from server.\n");
+    //                 exit(1);
+    //             }
+    //         }
+    //         if (strlen(msg) > 0) {
+    //             if(recv(clientSocket, msg, MAX_INPUT_SIZE, 0) < 0) {
+    //                 printf("Error in Connection [Fail to Recv]\n");
+    //             } else {
+    //                 printf("Server: %s\n", msg);
+    //                 bzero(msg, sizeof(msg));
+    //             }
+    //         } else {
+    //             printf ("You have entered nothing!\n");
+    //         }
+    //     } 
+
+    // }
 
 
     // while (1) {

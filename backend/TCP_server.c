@@ -25,6 +25,30 @@ typedef struct server_args
     int sockfd;    
 } server_args;
 
+
+// broadcast message to all users
+void ht_send_all (hashtab* ht, char* msg) {
+
+    uint32_t i = 0;
+    // load this entry
+    entry_ht* entry;
+    entry_ht* prev;
+
+    while (i < TABLE_SIZE) {
+        entry = ht->entries[i];
+        printf("[DEBUG] enter table\n");
+        while (entry != NULL) {
+            if (entry->user != NULL) {
+                printf("[DEBUG] user found\n");
+                send(entry->sock_id, msg, strlen(msg), 0);
+            }
+            prev = entry;
+            entry = prev->next;
+        }
+        i++;
+    }
+}
+
 void* newserver (void *arg) {
     server_args* args = arg;
     hashtab* ptr_usertable = args->ptr_ht;
@@ -58,6 +82,7 @@ void* newclient (void *arg) {
     hashtab* ptr_usertable = args->ptr_ht;
     //close(sockfd); /////////////////////////////////////////////////// double check
     char buffer[1024];
+    char send_buffer[2048+32];
     
     //check username entering
     char collision[64];
@@ -72,9 +97,9 @@ void* newclient (void *arg) {
         // check if the username is exist  
         //printf("[DEBUG] new socket = %d\n", newSocket);              
         recv(newSocket, collision, sizeof(collision), 0);
-        //printf("[DEBUG] recv of collision: %d\n", collision[0]);
-        collision[0] = ht_add(ptr_usertable, username);
-        //printf("[DEBUG] return of collision: %d\n", collision[0]);
+        printf("[DEBUG] recv of collision: %d\n", collision[0]);
+        collision[0] = ht_add(ptr_usertable, username, newSocket);
+        printf("[DEBUG] return of collision: %d\n", collision[0]);
         send(newSocket, collision, strlen(collision), 0);
         //printf("[DEBUG] send of collision: %d\n", collision[0]);
         
@@ -95,10 +120,21 @@ void* newclient (void *arg) {
         bzero(buffer, sizeof(buffer));
         recv(newSocket, buffer, 1024,0);
         printf("[DEBUG] recv buffer: %s from newSocket: %d\n", buffer, newSocket); //debug
-        if (strcmp(buffer, "&users") == 0) {
-            ht_print(ptr_usertable);
-        }
-        if (strcmp(buffer, "&exit") == 0) {
+
+        char command [1024]; // command for calling other user
+        char recvr [1024]; // msg recvier
+        char msg [1024]; // msg to other user
+        sscanf(buffer, "%s %s", command, msg);
+        if ((strncmp(command, "@xxx", 1) == 0) && strlen(command) > 2) {
+            strcpy(recvr, command+1);
+            int ret = ht_find(ptr_usertable ,recvr);
+            if (ret == -1) {
+                send(newSocket, "no such user!", 16, 0);
+            } else {
+                send(ret, buffer, strlen(buffer), 0);
+            }
+            continue;
+        } else if (strcmp(buffer, "&exit") == 0) {
             printf("[DEBUG] exit entered\n");
             ht_rm(ptr_usertable, username);
             printf("\n--- %s disconnected from port:%d ---\n", username, client_port);
@@ -107,7 +143,8 @@ void* newclient (void *arg) {
             break;
         } else {
             printf("%s: %s\n", username, buffer);
-            send(newSocket, buffer, strlen(buffer), 0);
+            sprintf(send_buffer, "%s: %s\n", username, buffer);
+            ht_send_all (ptr_usertable, send_buffer);
         }
     }
 }

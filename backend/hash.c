@@ -18,16 +18,18 @@ hashtab* ht_create () {
 }
 
 // allocate mem for entry slot
-entry_ht* ht_inst(const char* user) {
+entry_ht* ht_inst(const char* user, int sock_id) {
     // allocate memory for entry
     entry_ht* entry = malloc(sizeof*entry);
-    //entry_ht* entry = malloc(8);
+
     entry->user = malloc(strlen(user)+1);
-    //entry->next = malloc(8);
+    //entry->sock_id = malloc(sizeof(sock_id));
+
     entry->next = malloc(sizeof*entry);
 
-    // copy the username in place
+    // copy the username and sock_id in place
     strcpy((entry->user), user);
+    entry->sock_id = sock_id;
     // initialize next to NULL
     entry->next = NULL;
 
@@ -35,14 +37,14 @@ entry_ht* ht_inst(const char* user) {
 }
 
 // insert user to hash table, return 1 indicate add successfully, return 2 indicate a duplication in name
-int ht_add(hashtab* ht, const char* user) {
+int ht_add(hashtab* ht, const char* user, int sock_id) {
     unsigned int slot = hash_user(user);
     // look up the slot in hashmap
     entry_ht* entry = ht->entries[slot];
     //printf("entries pointer before: %p\n", ht->entries[slot]); //DEBUG
     // if no entry in that slot, insert one
     if (entry == NULL) {
-        ht->entries[slot] = ht_inst(user);
+        ht->entries[slot] = ht_inst(user, sock_id);
         //printf("entries pointer after: %p\n", ht->entries[slot]); // DEBUG
         return 1;
     }
@@ -57,7 +59,7 @@ int ht_add(hashtab* ht, const char* user) {
         entry = prev->next;
     }
     // while the entry is empty 
-    prev->next = ht_inst(user);
+    prev->next = ht_inst(user, sock_id);
     printf("[DEBUG] user: %s is appended to %d\n", user, slot);
     return 1;
 }
@@ -71,7 +73,7 @@ void ht_print(hashtab* ht) {
             continue;
         } else {
             for(;;) {
-                printf("%d: %s\n", i, entry->user);
+                printf("%d: %s, %d\n", i, entry->user, entry->sock_id);
                 if (entry->next == NULL) {
                     printf("[DEBUG] next entry is empty\n");
                     break;
@@ -84,6 +86,34 @@ void ht_print(hashtab* ht) {
             
         }
     }
+}
+
+// find user's socket id, if not found return -1
+int ht_find(hashtab* ht, const char* user) {
+    // look up the slot of this user
+    unsigned int slot = hash_user(user);
+
+    // load this entry
+    entry_ht* entry = ht->entries[slot];
+    entry_ht* prev;
+    int i = 0; 
+
+    if (entry == NULL) {
+        printf("[DEBUG] no such user\n");
+        return -1; // user not found
+    }
+
+    while (entry != NULL) {
+        if (strcmp(entry->user, user) == 0) {
+            printf("[DEBUG] user found\n");
+            return entry->sock_id;
+        }
+
+        prev = entry;
+        entry = prev->next;
+        i++;
+    }
+
 }
 
 // remove user from hash table
@@ -123,6 +153,7 @@ void ht_rm(hashtab* ht, const char* user) {
                 prev->next = entry->next;
             }
             free(entry->user);
+            //free(entry->sock_id);
             free(entry); 
             return;
         }
