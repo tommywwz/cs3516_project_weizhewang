@@ -26,6 +26,7 @@ void* client_recv_handler () {
             printf("Error in Connection [Fail to Recv]\n");
         } else {
             printf("%s\n", msg);
+            printf("chat here:\n");
         }
     }
 }
@@ -121,6 +122,7 @@ int main() {
         printf("Server: your name is: %s\n", username);
     }
     printf("\n///////////////\nGreeting %s\n///////////////\n\n", username);
+    printf("chat here:\n");
 
 
     pthread_t send_thread, recv_thread;
