@@ -46,14 +46,14 @@ int main() {
         bzero(username, sizeof(username));
         printf("Your name please: ");
         if (fgets(username, MAX_INPUT_SIZE, stdin)) {
-            if (strlen(username) < 5) {
-                printf("username must be more than three characters!\n");
-            } else {
-                if ((strlen(msg) > 0) && (msg[strlen (msg) - 1] == '\n')) {
-                    msg[strlen (msg) - 1] = '\0';
-                }
+            if ((strlen(username) > 0) && (username[strlen (username) - 1] == '\n')) {
+                    username[strlen (username) - 1] = '\0';
+            }
+            sscanf(username, "%s", username);
 
-                sscanf(username, "%s", username);
+            if (strlen(username) < 3) {
+                printf("username must be more than two characters and no space allowed!\n");
+            } else {
                 send(clientSocket, username, strlen(username), 0); 
                 recv(clientSocket, username, 1024,0); 
 
@@ -64,7 +64,7 @@ int main() {
                 printf("[DEBUG] collision recv: %d\n", collision[0]);                
 
                 if (collision[0] == 2) {
-                    printf("This name is used\n");
+                    printf("This name is used! please try another name\n");
                     //bzero(collision, sizeof(collision));
                 } else {
                     //bzero(collision, sizeof(collision));
@@ -95,17 +95,18 @@ int main() {
                     exit(1);
                 }
             }
-        } 
-        if (strlen(msg) > 0) {
-            if(recv(clientSocket, msg, MAX_INPUT_SIZE, 0) < 0) {
-                printf("Error in Connection [Fail to Recv]\n");
+            if (strlen(msg) > 0) {
+                if(recv(clientSocket, msg, MAX_INPUT_SIZE, 0) < 0) {
+                    printf("Error in Connection [Fail to Recv]\n");
+                } else {
+                    printf("Server: %s\n", msg);
+                    bzero(msg, sizeof(msg));
+                }
             } else {
-                printf("Server: %s\n", msg);
-                bzero(msg, sizeof(msg));
+                printf ("You have entered nothing!\n");
             }
-        } else {
-            printf ("You have entered nothing!\n");
-        }
+        } 
+
     }
 
 

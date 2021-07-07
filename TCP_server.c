@@ -76,7 +76,7 @@ void* newclient (void *arg) {
         }
     }
 
-    printf("username of port %d is %s\n", client_port, username);
+    printf("\n--- username of port %d is %s ---\n", client_port, username);
     send(newSocket, username, strlen(username), 0);
     printf("\nCurrent users:\n");
     ht_print(ptr_usertable);
@@ -86,13 +86,15 @@ void* newclient (void *arg) {
     while (1) {
         bzero(buffer, sizeof(buffer));
         recv(newSocket, buffer, 1024,0);
-        //printf("newSocket: %d\n", newSocket); //debug
+        printf("[DEBUG] recv buffer: %s from newSocket: %d\n", buffer, newSocket); //debug
         if (strcmp(buffer, "&users") == 0) {
             ht_print(ptr_usertable);
         }
         if (strcmp(buffer, "&exit") == 0) {
+            printf("[DEBUG] exit entered\n");
             ht_rm(ptr_usertable, username);
-            printf("%s disconnected from port:%d\n", username, client_port);
+            printf("\n--- %s disconnected from port:%d ---\n", username, client_port);
+            printf("rest of users:\n");
             ht_print(ptr_usertable);
             break;
         } else {
@@ -121,10 +123,10 @@ int main() {
 
     sockfd = socket(AF_INET, SOCK_STREAM, 0);
     if (sockfd < 0) {
-        printf("Error in connection!\n");
+        printf("[-] Error in connection!\n");
         exit(1);
     }
-    printf("Server Socket is Created!\n");
+    printf("[+] Server Socket is Created!\n");
 
     memset(&serverAddr, '\0', sizeof(serverAddr));
     serverAddr.sin_family = AF_INET;
@@ -133,15 +135,15 @@ int main() {
 
     ret = bind(sockfd, (struct sockaddr*)&serverAddr, sizeof(serverAddr));
     if (ret < 0) {
-        printf("Error in Binding\n");
+        printf("[-] Error in Binding\n");
     } else {
-        printf("Bind to Port %d\n", PORT);
+        printf("[+] Bind to Port %d\n", PORT);
     }
 
     if(listen(sockfd, 10) == 0) {
         printf("Listening.....\n");
     } else {
-        printf("Error in Listening\n");
+        printf("[-] Error in Listening\n");
     }
 
     pthread_create(&pthread_id, NULL, newserver, ptr_usertable);
@@ -151,20 +153,12 @@ int main() {
         if(newSocket < 0) {
             exit(1);
         }
-        printf("Connection accepted from addr:%s  port:%d\nwaiting for username.....\n", inet_ntoa(newAddr.sin_addr), ntohs(newAddr.sin_port));
+        printf("[+] Connection accepted from addr:%s  port:%d\nwaiting for username.....\n", inet_ntoa(newAddr.sin_addr), ntohs(newAddr.sin_port));
 
         arguments args;
         args.port = ntohs(newAddr.sin_port);
         args.ptr_ht = ptr_usertable;
         args.sockID = newSocket;
-
-        // DEBUG
-        // ht_add(ptr_usertable, "Tommy");
-        // ht_print(ptr_usertable);
-        // ht_add(ptr_usertable, "Tom");
-        // ht_print(ptr_usertable);
-        // DEBUG
-
 
         //open a thread for new client
         pthread_create(&pthread_id, NULL, newclient, &args);

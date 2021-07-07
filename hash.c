@@ -90,17 +90,20 @@ void ht_print(hashtab* ht) {
 void ht_rm(hashtab* ht, const char* user) {
     // look up the slot of this user
     unsigned int slot = hash_user(user);
-        // load this entry
+        
+    // load this entry
     entry_ht* entry = ht->entries[slot];
     entry_ht* prev;
     int i = 0; 
 
     if (entry == NULL) {
+        printf("[DEBUG] nothing need to remove\n");
         return;
     }
 
     while (entry != NULL) {
         if (strcmp(entry->user, user) == 0) {
+            printf("[DEBUG] find the user to be removed!\n");
             // no next entry and first item in the list
             if (entry->next == NULL && i == 0) {
                 ht->entries[slot] = NULL;
@@ -111,11 +114,13 @@ void ht_rm(hashtab* ht, const char* user) {
             }
             // last item in the list
             if (entry->next == NULL && i != 0) {
-                entry = NULL;
+                printf("[DEBUG] condition three\n");
+                prev->next = NULL;
             }
             // item is in the middle of list
             if (entry->next != NULL && i != 0) {
-                entry = entry->next;
+                printf("[DEBUG] condition four\n");
+                prev->next = entry->next;
             }
             free(entry->user);
             free(entry); 
@@ -123,6 +128,7 @@ void ht_rm(hashtab* ht, const char* user) {
         }
            
         prev = entry;
+        entry = prev->next;
         i++;
     }
 }
