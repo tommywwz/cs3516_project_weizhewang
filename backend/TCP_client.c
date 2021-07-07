@@ -49,7 +49,7 @@ void* client_recv_handler () {
 void* client_send_handler () {
 
     char msg [MAX_INPUT_SIZE];
-    while (1) {
+    while (!leave) {
 
         if (fgets(msg, MAX_INPUT_SIZE, stdin)) {
             if ((strlen(msg) > 0) && (msg[strlen (msg) - 1] == '\n')) {
@@ -134,7 +134,6 @@ int main() {
                     printf("----------------------\n"
                         "commands:\n &exit: quit the server\n &list: request user list \n &help: list all commands\n @username: send direct message to user\n"
                         "----------------------\n");
-                    printf("chat here:\n");
                     break;
                 }
             }
