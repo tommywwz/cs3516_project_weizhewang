@@ -1,7 +1,7 @@
 all: TCP_client TCP_server
 
 TCP_client: TCP_client.o
-	gcc -g TCP_client.o -o TCP_client
+	gcc -pthread -g TCP_client.o -o TCP_client
 
 TCP_client.o: TCP_client.c
 	gcc -g -c TCP_client.c

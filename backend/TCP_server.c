@@ -11,6 +11,7 @@
 
 #define PORT 8888
 #define MAX_INPUT_SIZE 1024
+#define MAX_USERNAME_LENGTH 64
 
 typedef struct client_args
 {
@@ -24,6 +25,80 @@ typedef struct server_args
     hashtab* ptr_ht;
     int sockfd;    
 } server_args;
+
+// load a user list from hashtable
+void ht_load_list (char* userlist, hashtab* ht) {
+    strncat(userlist, "\nOnline users:\n", strlen("\nOnline users:\n")+1);
+    unsigned int i;
+    for(i = 0; i < TABLE_SIZE; ++i) {
+        entry_ht* entry = ht->entries[i];
+        // look up each entry 
+        if (entry == NULL) {
+            continue;
+        } else {
+            // loop through the linkedlist to add all user names
+            for(;;) {
+                strncat(userlist, entry->user, strlen(entry->user));
+                strncat(userlist, "\n", strlen("\n")+1);
+                if (entry->next == NULL) {
+                    break;
+                }         
+                entry = entry->next;
+            }  
+        }
+    }
+}
+
+// broadcast message to all users
+void ht_send_all (hashtab* ht, char* msg) {
+
+    uint32_t i = 0;
+    // load this entry
+    entry_ht* entry;
+    entry_ht* prev;
+
+    while (i < TABLE_SIZE) {
+        entry = ht->entries[i];
+        //printf("[DEBUG] enter table\n");
+        while (entry != NULL) {
+            if (entry->user != NULL) {
+                //printf("[DEBUG] user found\n");
+                send(entry->sock_id, msg, strlen(msg), 0);
+            }
+            prev = entry;
+            entry = prev->next;
+        }
+        i++;
+    }
+}
+
+int ht_send_user (hashtab* ht, char* msg, const char* user) {
+    // look up the slot of this user
+    unsigned int slot = hash_user(user);
+    char buffer [MAX_USERNAME_LENGTH + MAX_INPUT_SIZE + 30];
+    // load this entry
+    entry_ht* entry = ht->entries[slot];
+    entry_ht* prev;
+    int i = 0; 
+
+    if (entry == NULL) {
+        printf("[DEBUG] no such user\n");
+        return -1; // user not found
+    }
+
+    while (entry != NULL) {
+        if (strcmp(entry->user, user) == 0) {
+            printf("[DEBUG] user found\n");
+            sprintf(buffer, "Private Message from %s", msg);
+            send(entry->sock_id, buffer, strlen(buffer), 0);
+            return 0; // success
+        }
+
+        prev = entry;
+        entry = prev->next;
+        i++;
+    }
+}
 
 void* newserver (void *arg) {
     server_args* args = arg;
@@ -57,31 +132,39 @@ void* newclient (void *arg) {
     uint16_t client_port = args->port;
     hashtab* ptr_usertable = args->ptr_ht;
     //close(sockfd); /////////////////////////////////////////////////// double check
-    char buffer[1024];
+    char buffer[MAX_INPUT_SIZE];
+    char send_buffer[MAX_INPUT_SIZE+MAX_USERNAME_LENGTH+32];
     
     //check username entering
-    char collision[64];
-    char username[1024];
+    int collision [1] = {1};
+    char username[MAX_USERNAME_LENGTH];
 
     while(1) {
         bzero(username, sizeof(username));
         bzero(collision, sizeof(collision));
-        recv(newSocket, username, 1024,0); //a
+        recv(newSocket, username, MAX_USERNAME_LENGTH,0); //a
         send(newSocket, username, strlen(username), 0); //a
 
         // check if the username is exist  
-        //printf("[DEBUG] new socket = %d\n", newSocket);              
+        printf("[DEBUG] waiting for recv a username\n");              
         recv(newSocket, collision, sizeof(collision), 0);
-        //printf("[DEBUG] recv of collision: %d\n", collision[0]);
-        collision[0] = ht_add(ptr_usertable, username);
-        //printf("[DEBUG] return of collision: %d\n", collision[0]);
-        send(newSocket, collision, strlen(collision), 0);
+        printf("[DEBUG] recv of collision: %d\n", collision[0]);
+        collision[0] = ht_add(ptr_usertable, username, newSocket);
+        printf("[DEBUG] return of collision: %d\n", collision[0]);
+        send(newSocket, collision, sizeof(collision), 0);
         //printf("[DEBUG] send of collision: %d\n", collision[0]);
         
-        // if so inform the client and check new user name
+        
+        // when username is valid, break the loop
         if (collision[0] == 1) {
             break;
         }
+    }
+
+    if (strcmp(username, "&exit") == 0) {
+        int* exit;
+        printf("\n--- disconnected from port:%d ---\n", client_port);
+        return exit;
     }
 
     printf("\n--- username of port %d is %s ---\n", client_port, username);
@@ -95,19 +178,46 @@ void* newclient (void *arg) {
         bzero(buffer, sizeof(buffer));
         recv(newSocket, buffer, 1024,0);
         printf("[DEBUG] recv buffer: %s from newSocket: %d\n", buffer, newSocket); //debug
-        if (strcmp(buffer, "&users") == 0) {
-            ht_print(ptr_usertable);
-        }
-        if (strcmp(buffer, "&exit") == 0) {
+
+
+        if ((strncmp(buffer, "@xxx", 1) == 0)) {
+            char command [1024]; // command for calling other user
+            char recvr [MAX_USERNAME_LENGTH]; // msg recvier
+            char msg [MAX_INPUT_SIZE]; // msg extrated from buffer
+            char send_msg [MAX_INPUT_SIZE + MAX_USERNAME_LENGTH + 5]; // msg for sending
+
+            // trim message
+            sscanf(buffer, "%s", command);
+            strcpy(recvr, command+1); // take out @
+            strcpy(msg, buffer+strlen(command)+1); // take out message part
+            sprintf(send_msg, "%s: %s", username, msg);
+            int ret = ht_send_user (ptr_usertable, send_msg, recvr);
+            if (ret == -1) {
+                send(newSocket, "no such user!", 16, 0);
+            }
+            continue;
+        } else if (strcmp(buffer, "&exit") == 0) {
+            char member_left [MAX_INPUT_SIZE];
             printf("[DEBUG] exit entered\n");
             ht_rm(ptr_usertable, username);
             printf("\n--- %s disconnected from port:%d ---\n", username, client_port);
-            printf("rest of users:\n");
+            printf("\nrest of users:\n");
+            sprintf(member_left, "\n---%s left chat room---\n", username);
+            ht_send_all (ptr_usertable, member_left);
             ht_print(ptr_usertable);
             break;
+        } else if (strcmp(buffer, "&list") == 0) {
+            char userlist [1024];
+            ht_load_list(userlist, ptr_usertable);
+            send(newSocket, userlist, strlen(userlist), 0);
+        } else if (strcmp(buffer, "&help") == 0) {
+            char help_msg [200];
+            sprintf(help_msg, "----------------------\ncommands:\n &exit: quit the server\n &list: request user list \n &help: list all commands\n @username: send direct message to user\n----------------------\n");
+            send(newSocket, help_msg, 200, 0);
         } else {
             printf("%s: %s\n", username, buffer);
-            send(newSocket, buffer, strlen(buffer), 0);
+            sprintf(send_buffer, "%s: %s", username, buffer);
+            ht_send_all (ptr_usertable, send_buffer);
         }
     }
 }
@@ -164,7 +274,7 @@ int main() {
         if(newSocket < 0) {
             exit(1);
         }
-        printf("[+] Connection accepted from addr:%s  port:%d\nwaiting for username.....\n", inet_ntoa(newAddr.sin_addr), ntohs(newAddr.sin_port));
+        printf("\n[+] Connection accepted from addr:%s  port:%d\nwaiting for username.....\n", inet_ntoa(newAddr.sin_addr), ntohs(newAddr.sin_port));
 
         client_args client_args;
         client_args.port = ntohs(newAddr.sin_port);
@@ -172,10 +282,14 @@ int main() {
         client_args.sockID = newSocket;
 
         //open a thread for new client
-        pthread_create(&pthread_id, NULL, newclient, &client_args);
+        if (pthread_create(&pthread_id, NULL, newclient, &client_args) != 0){
+		    printf("[-] ERROR: can't create client thread\n");
+            exit(1);
+        }
+        printf("[DEBUG] new client thread opened\n");
+	}
   
-    }
-
+    printf("server terminated!\n");
     close(newSocket);
 
     return 0;
