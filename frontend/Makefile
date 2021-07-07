@@ -1,8 +1,5 @@
-getopt: getopt.o
-	gcc -g getopt.o -o getopt
-
-getopt.o: getopt.c
-	gcc -g -c getopt.c
+gui: gui.c
+	gcc `pkg-config --cflags gtk+-3.0` -o gui gui.c `pkg-config --libs gtk+-3.0`
 
 clean:
-	rm -r *.o getopt
+	rm -r *.o gui
