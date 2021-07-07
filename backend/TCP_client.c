@@ -10,19 +10,20 @@
 
 #define PORT 8888
 #define MAX_INPUT_SIZE 1024
+#define MAX_USERNAME_SIZE 128
 
 // globals
 int clientSocket = 0;
-char username[MAX_INPUT_SIZE];
+char username[MAX_USERNAME_SIZE];
 int leave = 0;
 
 
 void* client_recv_handler () {
     
-    char msg [MAX_INPUT_SIZE+32];
+    char msg [MAX_INPUT_SIZE+MAX_USERNAME_SIZE+30];
     while(1) {
         bzero(msg, sizeof(msg));
-        if(recv(clientSocket, msg, MAX_INPUT_SIZE, 0) < 0) {
+        if(recv(clientSocket, msg, sizeof(msg), 0) < 0) {
             printf("Error in Connection [Fail to Recv]\n");
         } else {
             printf("%s\n", msg);
@@ -82,12 +83,12 @@ int main() {
 
     // allow user to choose nickname at the begining
 
-    char collision[64];
+    int collision [1] = {1};
     
     while (1) {
         bzero(username, sizeof(username));
         printf("Your name please: ");
-        if (fgets(username, MAX_INPUT_SIZE, stdin)) {
+        if (fgets(username, MAX_USERNAME_SIZE, stdin)) {
             if ((strlen(username) > 0) && (username[strlen (username) - 1] == '\n')) {
                     username[strlen (username) - 1] = '\0';
             }
@@ -100,7 +101,7 @@ int main() {
                 recv(clientSocket, username, 1024,0); 
 
                 // check the username collision
-                send(clientSocket, collision, strlen(collision), 0);
+                send(clientSocket, collision, sizeof(collision), 0);
                 printf("[DEBUG] send of collision: %d\n", collision[0]);
                 recv(clientSocket, collision, sizeof(collision), 0);
                 printf("[DEBUG] collision recv: %d\n", collision[0]);                
@@ -116,7 +117,7 @@ int main() {
         }  
     }
     
-    if(recv(clientSocket, username, MAX_INPUT_SIZE, 0) < 0) {
+    if(recv(clientSocket, username, MAX_USERNAME_SIZE, 0) < 0) {
         printf("Error in Connection [Fail to Recv]\n");
     } else {
         printf("Server: your name is: %s\n", username);

@@ -11,7 +11,7 @@
 
 #define PORT 8888
 #define MAX_INPUT_SIZE 1024
-#define MAX_USERNAME_LENGTH 1024
+#define MAX_USERNAME_LENGTH 128
 
 typedef struct client_args
 {
@@ -53,7 +53,7 @@ void ht_send_all (hashtab* ht, char* msg) {
 int ht_send_user (hashtab* ht, char* msg, const char* user) {
     // look up the slot of this user
     unsigned int slot = hash_user(user);
-
+    char buffer [MAX_USERNAME_LENGTH + MAX_INPUT_SIZE + 30];
     // load this entry
     entry_ht* entry = ht->entries[slot];
     entry_ht* prev;
@@ -67,7 +67,8 @@ int ht_send_user (hashtab* ht, char* msg, const char* user) {
     while (entry != NULL) {
         if (strcmp(entry->user, user) == 0) {
             printf("[DEBUG] user found\n");
-            send(entry->sock_id, msg, strlen(msg), 0);
+            sprintf(buffer, "Private Message from %s", msg);
+            send(entry->sock_id, buffer, strlen(buffer), 0);
             return 0; // success
         }
 
@@ -113,7 +114,7 @@ void* newclient (void *arg) {
     char send_buffer[MAX_INPUT_SIZE+MAX_USERNAME_LENGTH+32];
     
     //check username entering
-    char collision[64];
+    int collision [1] = {1};
     char username[MAX_USERNAME_LENGTH];
 
     while(1) {
@@ -128,7 +129,7 @@ void* newclient (void *arg) {
         printf("[DEBUG] recv of collision: %d\n", collision[0]);
         collision[0] = ht_add(ptr_usertable, username, newSocket);
         printf("[DEBUG] return of collision: %d\n", collision[0]);
-        send(newSocket, collision, strlen(collision), 0);
+        send(newSocket, collision, sizeof(collision), 0);
         //printf("[DEBUG] send of collision: %d\n", collision[0]);
         
         // if so inform the client and check new user name
@@ -153,22 +154,27 @@ void* newclient (void *arg) {
         if ((strncmp(buffer, "@xxx", 1) == 0)) {
             char command [1024]; // command for calling other user
             char recvr [MAX_USERNAME_LENGTH]; // msg recvier
-            char msg [1024]; // msg to other user
+            char msg [MAX_INPUT_SIZE]; // msg extrated from buffer
+            char send_msg [MAX_INPUT_SIZE + MAX_USERNAME_LENGTH + 5]; // msg for sending
 
-            // separate message
-            sscanf(buffer, "%s %s", command, msg);
+            // trim message
+            sscanf(buffer, "%s", command);
             strcpy(recvr, command+1); // take out @
-
-            int ret = ht_send_user (ptr_usertable, msg, recvr);
+            strcpy(msg, buffer+strlen(command)+1); // take out message part
+            sprintf(send_msg, "%s: %s", username, msg);
+            int ret = ht_send_user (ptr_usertable, send_msg, recvr);
             if (ret == -1) {
                 send(newSocket, "no such user!", 16, 0);
             }
             continue;
         } else if (strcmp(buffer, "&exit") == 0) {
+            char member_left [MAX_INPUT_SIZE];
             printf("[DEBUG] exit entered\n");
             ht_rm(ptr_usertable, username);
             printf("\n--- %s disconnected from port:%d ---\n", username, client_port);
             printf("rest of users:\n");
+            sprintf(member_left, "\n---%s left chat room---\n", username);
+            ht_send_all (ptr_usertable, member_left);
             ht_print(ptr_usertable);
             break;
         } else {
