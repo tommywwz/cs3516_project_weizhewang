@@ -27,21 +27,12 @@ void exiting () {
 
 void  Ctrl_C_Handler(int sig)
 {
-    // char  c;
-    // signal(sig, SIG_IGN);
-    // printf("Do you really want to quit? [y/n] \n");
-    // c = getchar();
-    // if (c == 'y' || c == 'Y') {
-    //     exiting ();
-    // } else {
-    //     signal(SIGINT, Ctrl_C_Handler);
-    // }
     exiting ();
 }
 
 void* client_recv_handler () {
     char msg [MAX_INPUT_SIZE+MAX_USERNAME_SIZE+30];
-    while(1) {
+    while(!leave) {
         bzero(msg, sizeof(msg));
         if(recv(clientSocket, msg, sizeof(msg), 0) < 0) {
             printf("Error in Connection [Fail to Recv]\n");
@@ -140,6 +131,9 @@ int main() {
                         printf("Server: your name is: %s\n", username);
                     }
                     printf("\n///////////////\nGreeting %s\n///////////////\n\n", username);
+                    printf("----------------------\n"
+                        "commands:\n &exit: quit the server\n &list: request user list \n &help: list all commands\n @username: send direct message to user\n"
+                        "----------------------\n");
                     printf("chat here:\n");
                     break;
                 }
@@ -148,16 +142,18 @@ int main() {
     }
     
 
-    pthread_t send_thread, recv_thread;
-    if (pthread_create(&send_thread, NULL, (void *) client_send_handler, NULL) != 0){
-		printf("[-] ERROR: can't create send thread\n");
-        exit(1);
-	}
+    if (!leave) {
+        pthread_t send_thread, recv_thread;
+        if (pthread_create(&send_thread, NULL, (void *) client_send_handler, NULL) != 0){
+            printf("[-] ERROR: can't create send thread\n");
+            exit(1);
+        }
 
-    if (pthread_create(&recv_thread, NULL, (void *) client_recv_handler, NULL) != 0){
-		printf("[-] ERROR: can't create recv thread\n");
-        exit(1);
-	}
+        if (pthread_create(&recv_thread, NULL, (void *) client_recv_handler, NULL) != 0){
+            printf("[-] ERROR: can't create recv thread\n");
+            exit(1);
+        }
+    }
 
     while (!leave) {
 

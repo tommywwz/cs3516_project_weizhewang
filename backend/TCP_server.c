@@ -11,7 +11,7 @@
 
 #define PORT 8888
 #define MAX_INPUT_SIZE 1024
-#define MAX_USERNAME_LENGTH 128
+#define MAX_USERNAME_LENGTH 64
 
 typedef struct client_args
 {
@@ -26,6 +26,28 @@ typedef struct server_args
     int sockfd;    
 } server_args;
 
+// load a user list from hashtable
+void ht_load_list (char* userlist, hashtab* ht) {
+    strncat(userlist, "\nOnline users:\n", strlen("\nOnline users:\n")+1);
+    unsigned int i;
+    for(i = 0; i < TABLE_SIZE; ++i) {
+        entry_ht* entry = ht->entries[i];
+        // look up each entry 
+        if (entry == NULL) {
+            continue;
+        } else {
+            // loop through the linkedlist to add all user names
+            for(;;) {
+                strncat(userlist, entry->user, strlen(entry->user));
+                strncat(userlist, "\n", strlen("\n")+1);
+                if (entry->next == NULL) {
+                    break;
+                }         
+                entry = entry->next;
+            }  
+        }
+    }
+}
 
 // broadcast message to all users
 void ht_send_all (hashtab* ht, char* msg) {
@@ -184,6 +206,14 @@ void* newclient (void *arg) {
             ht_send_all (ptr_usertable, member_left);
             ht_print(ptr_usertable);
             break;
+        } else if (strcmp(buffer, "&list") == 0) {
+            char userlist [1024];
+            ht_load_list(userlist, ptr_usertable);
+            send(newSocket, userlist, strlen(userlist), 0);
+        } else if (strcmp(buffer, "&help") == 0) {
+            char help_msg [200];
+            sprintf(help_msg, "----------------------\ncommands:\n &exit: quit the server\n &list: request user list \n &help: list all commands\n @username: send direct message to user\n----------------------\n");
+            send(newSocket, help_msg, 200, 0);
         } else {
             printf("%s: %s\n", username, buffer);
             sprintf(send_buffer, "%s: %s", username, buffer);
