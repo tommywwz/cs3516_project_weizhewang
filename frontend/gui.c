@@ -1,4 +1,8 @@
+#include "TCP_client_gui.h"
 #include <gtk/gtk.h>
+
+
+int client_main();
 
 static void
 print_hello (GtkWidget *widget,
