@@ -139,6 +139,12 @@ void* newclient (void *arg) {
         }
     }
 
+    if (strcmp(username, "&exit") == 0) {
+        int* exit;
+        printf("\n--- disconnected from port:%d ---\n", client_port);
+        return exit;
+    }
+
     printf("\n--- username of port %d is %s ---\n", client_port, username);
     send(newSocket, username, strlen(username), 0);
     printf("\nCurrent users:\n");
@@ -238,7 +244,7 @@ int main() {
         if(newSocket < 0) {
             exit(1);
         }
-        printf("[+] Connection accepted from addr:%s  port:%d\nwaiting for username.....\n", inet_ntoa(newAddr.sin_addr), ntohs(newAddr.sin_port));
+        printf("\n[+] Connection accepted from addr:%s  port:%d\nwaiting for username.....\n", inet_ntoa(newAddr.sin_addr), ntohs(newAddr.sin_port));
 
         client_args client_args;
         client_args.port = ntohs(newAddr.sin_port);

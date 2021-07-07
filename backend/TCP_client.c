@@ -46,7 +46,7 @@ void* client_recv_handler () {
         if(recv(clientSocket, msg, sizeof(msg), 0) < 0) {
             printf("Error in Connection [Fail to Recv]\n");
         } else if (strlen(msg) == 0) {
-            printf("server is down!\n");
+            printf("\nSERVER IS DOWN!\nConnection breaked!\n");
             exiting ();
         } else {
             printf("%s\n", msg);
@@ -108,7 +108,7 @@ int main() {
 
     int collision [1] = {1};
     
-    while (1) {
+    while (!leave) {
         bzero(username, sizeof(username));
         printf("Your name please: ");
         if (fgets(username, MAX_USERNAME_SIZE, stdin)) {
@@ -134,20 +134,19 @@ int main() {
                     //bzero(collision, sizeof(collision));
                 } else {
                     //bzero(collision, sizeof(collision));
+                    if(recv(clientSocket, username, MAX_USERNAME_SIZE, 0) < 0) {
+                        printf("Error in Connection [Fail to Recv]\n");
+                    } else {
+                        printf("Server: your name is: %s\n", username);
+                    }
+                    printf("\n///////////////\nGreeting %s\n///////////////\n\n", username);
+                    printf("chat here:\n");
                     break;
                 }
             }
         }  
     }
     
-    if(recv(clientSocket, username, MAX_USERNAME_SIZE, 0) < 0) {
-        printf("Error in Connection [Fail to Recv]\n");
-    } else {
-        printf("Server: your name is: %s\n", username);
-    }
-    printf("\n///////////////\nGreeting %s\n///////////////\n\n", username);
-    printf("chat here:\n");
-
 
     pthread_t send_thread, recv_thread;
     if (pthread_create(&send_thread, NULL, (void *) client_send_handler, NULL) != 0){
