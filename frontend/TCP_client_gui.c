@@ -27,7 +27,12 @@ int client_main();
 int clientSocket = 0;
 char username[MAX_USERNAME_SIZE];
 int leave = 0;
+// gui globals
 pthread_t backend;
+GtkBuilder *builder;
+GObject *window;
+GObject *button;
+GError *error = NULL;
 
 static void
 print_hello (GtkWidget *widget,
@@ -188,14 +193,19 @@ void* initialize_client(void* wut){
     }
 }
 
+void exit_handler(){
+    exiting();
+    gtk_main_quit();
+}
+
 int
 main (int   argc,
       char *argv[])
 {
-    GtkBuilder *builder;
-    GObject *window;
-    GObject *button;
-    GError *error = NULL;
+    // GtkBuilder *builder;
+    // GObject *window;
+    // GObject *button;
+    // GError *error = NULL;
 
     gtk_init (&argc, &argv);
 
@@ -210,13 +220,13 @@ main (int   argc,
 
     /* Connect signal handlers to the constructed widgets. */
     window = gtk_builder_get_object (builder, "window");
-    g_signal_connect (window, "destroy", G_CALLBACK (gtk_main_quit), NULL);
+    g_signal_connect (window, "destroy", G_CALLBACK (exit_handler), NULL);
 
     button = gtk_builder_get_object (builder, "button1");
     g_signal_connect (button, "clicked", G_CALLBACK (initialize_client), NULL);
 
     button = gtk_builder_get_object (builder, "quit");
-    g_signal_connect (button, "clicked", G_CALLBACK (exiting), NULL);
+    g_signal_connect (button, "clicked", G_CALLBACK (exit_handler), NULL);
 
     gtk_main ();
     
