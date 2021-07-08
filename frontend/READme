@@ -1,3 +1,7 @@
+C gui --search--> GTK package --> trialed different versions (from 2.0 to 4.0) -> installed dependncies for different versions
+--> learn how to deploy GTK --> found out couldnt view the GUI using WSL(windows subsystem of linux) --search--> found out applications like Vcxsvr
+--> learned and used vcxsvr --> written simple GUI with login and logout button while parraleling the GUIless client using multithreading.
+
 You will need software like Vcxsvr to run the GUI if you are operating on WSL instead of native UNIX distribution.
 Then you need to run the command below in the WSL console and enable Vcxsvr to give WSL the permission to pull up the GUI:
 $ export DISPLAY=$(cat /etc/resolv.conf | grep nameserver | awk '{print $2}'):0
