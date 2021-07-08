@@ -166,15 +166,15 @@ void ht_rm(hashtab* ht, const char* user) {
 
 // give username a hash code
 unsigned int hash_user (const char* user) {
-    unsigned long int val = 0;
+    unsigned long int hash = 0;
     unsigned int i;
     unsigned int user_len = strlen(user);
 
-    // doing mutiple mutiplications to "randomize" the hashcode
+    // doing mutiple mutiplications to generate the hashcode
     for (i = 0; i < user_len; ++i) {
-        val = val * 27 + user[i];
+     hash = hash * 27 + user[i];
     }
 
-    val = val % TABLE_SIZE;
-    return val;
+    hash = hash % TABLE_SIZE;
+    return hash;
 }
