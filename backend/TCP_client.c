@@ -116,9 +116,9 @@ int main() {
 
                 // check the username collision
                 send(clientSocket, collision, sizeof(collision), 0);
-                printf("[DEBUG] send of collision: %d\n", collision[0]);
+                //printf("[DEBUG] send of collision: %d\n", collision[0]);
                 recv(clientSocket, collision, sizeof(collision), 0);
-                printf("[DEBUG] collision recv: %d\n", collision[0]);                
+                //printf("[DEBUG] collision recv: %d\n", collision[0]);                
 
                 if (collision[0] == 2) {
                     printf("This name is used! please try another name\n");
@@ -159,67 +159,6 @@ int main() {
     }
 
     printf("\nBye~\n");
-
-
-    // while (1) {
-    //     printf("%s: ", username);
-
-    //     if (fgets(msg, MAX_INPUT_SIZE, stdin)) {
-    //         if ((strlen(msg) > 0) && (msg[strlen (msg) - 1] == '\n')) {
-    //             msg[strlen (msg) - 1] = '\0';  // add null terminater at the end of input
-    //             send(clientSocket, msg, strlen(msg), 0);
-    //             if (strcmp(msg, "&exit") == 0) {
-    //                 close(clientSocket);
-    //                 printf("Disconnected from server.\n");
-    //                 exit(1);
-    //             }
-    //         }
-    //         if (strlen(msg) > 0) {
-    //             if(recv(clientSocket, msg, MAX_INPUT_SIZE, 0) < 0) {
-    //                 printf("Error in Connection [Fail to Recv]\n");
-    //             } else {
-    //                 printf("Server: %s\n", msg);
-    //                 bzero(msg, sizeof(msg));
-    //             }
-    //         } else {
-    //             printf ("You have entered nothing!\n");
-    //         }
-    //     } 
-
-    // }
-
-
-    // while (1) {
-    //     printf("%s: ", username);
-    //     bzero(msg, sizeof(msg));
-
-    //     fflush(stdin);
-    //     //fgets(msg, MAX_INPUT_SIZE, stdin);
-
-    //     while (fgets(msg, MAX_INPUT_SIZE, stdin)) {
-    //         printf("yea\n");
-    //         if ((strlen(msg) > 0) && (msg[strlen (msg) - 1] == '\n')) {
-    //              msg[strlen (msg) - 1] = '\0';
-    //         }
-
-
-    //         send(clientSocket, msg, strlen(msg), 0);
-    //         if (strcmp(msg, "&exit") == 0) {
-    //             close(clientSocket);
-    //             printf("Disconnected from server.\n");
-    //             exit(1);
-    //         }
-        
-    //         if(recv(clientSocket, msg, MAX_INPUT_SIZE, 0) < 0) {
-    //             printf("Error in Connection [Fail to Recv]\n");
-    //         } else {
-    //             printf("Server: %s\n", msg);
-    //             bzero(msg, sizeof(msg));
-    //         }
-    //     }
-        // scanf("%1024[^\n]%*c", msg);
-    // }
-
     return 0;
 }
 

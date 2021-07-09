@@ -16,4 +16,4 @@ hash.o: hash.c hash.h
 	gcc -g -c hash.c
 
 clean:
-	rm -r *.o TCP_server TCP_client hash
+	rm -r *.o TCP_server TCP_client

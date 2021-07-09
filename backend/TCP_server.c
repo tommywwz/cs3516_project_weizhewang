@@ -114,8 +114,6 @@ void* newserver (void *arg) {
             if (strcmp(cmd, "&users") == 0) {
                 printf("connected users:\n");
                 ht_print(ptr_usertable);
-            } else if (strcmp(cmd, "&terminate") == 0) {
-                close(sockfd);
             } else if (strcmp(cmd, "&help") == 0) {
                 printf("&users: display all users\n");
             } else {
@@ -148,9 +146,9 @@ void* newclient (void *arg) {
         // check if the username is exist  
         printf("[DEBUG] waiting for recv a username\n");              
         recv(newSocket, collision, sizeof(collision), 0);
-        printf("[DEBUG] recv of collision: %d\n", collision[0]);
+        //printf("[DEBUG] recv of collision: %d\n", collision[0]);
         collision[0] = ht_add(ptr_usertable, username, newSocket);
-        printf("[DEBUG] return of collision: %d\n", collision[0]);
+        //printf("[DEBUG] return of collision: %d\n", collision[0]);
         send(newSocket, collision, sizeof(collision), 0);
         //printf("[DEBUG] send of collision: %d\n", collision[0]);
         
@@ -185,7 +183,7 @@ void* newclient (void *arg) {
     while (1) {
         bzero(buffer, sizeof(buffer));
         recv(newSocket, buffer, 1024,0);
-        printf("[DEBUG] recv buffer: %s from newSocket: %d\n", buffer, newSocket); //debug
+        //printf("[DEBUG] recv buffer: %s from newSocket: %d\n", buffer, newSocket); //debug
 
 
         if ((strncmp(buffer, "@xxx", 1) == 0)) {

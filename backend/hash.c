@@ -75,7 +75,7 @@ void ht_print(hashtab* ht) {
             for(;;) {
                 printf("%d: %s, %d\n", i, entry->user, entry->sock_id);
                 if (entry->next == NULL) {
-                    printf("[DEBUG] next entry is empty\n");
+                    //printf("[DEBUG] next entry is empty\n");
                     break;
                 }
 

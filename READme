@@ -1,0 +1,4 @@
+To run the project with partial functioning client GUI,
+	go to the frontend folder;
+To run the client-server program with full functionality without client GUI, 
+	please run the program in backend folder.
